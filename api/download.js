@@ -1,47 +1,46 @@
-import { Innertube } from "youtubei.js";
+import youtubedl from 'youtube-dl-exec';
 
-/**
- * GET /api/download?id=VIDEO_ID&quality=720
- */
 export default async function handler(req, res) {
+  const { videoUrl } = req.query;
+
+  if (!videoUrl) {
+    return res.status(400).json({ error: 'Missing videoUrl query parameter' });
+  }
+
   try {
-    const videoId = req.query.id;
-    const quality = req.query.quality ? parseInt(req.query.quality) : null;
+    // Fetch video info with no download, json output
+    const info = await youtubedl(videoUrl, {
+      dumpSingleJson: true,
+      noWarnings: true,
+      noCheckCertificates: true,
+      preferFreeFormats: true,
+      youtubeSkipDashManifest: true,
+      // Add any other yt-dlp compatible flags as needed here
+    });
 
-    if (!videoId)
-      return res.status(400).json({ error: "Missing id" });
-
-    const yt = await Innertube.create({ client_type: "WEB" });
-    const info = await yt.getInfo(videoId);
-
-    const list = [...(info.streaming_data.formats || []), ...(info.streaming_data.adaptive_formats || [])];
-
-    const combined = list.filter(f => f.vcodec && f.acodec && f.url);
-    const videoOnly = list.filter(f => f.vcodec && !f.acodec && f.url);
-    const audioOnly = list.filter(f => !f.vcodec && f.acodec && f.url);
-
-    const pick = (arr, q) => {
-      if (!arr.length) return null;
-      if (!q)
-        return arr.sort((a, b) => (b.height || 0) - (a.height || 0))[0];
-      const filtered = arr.filter(x => x.height <= q);
-      return filtered.sort((a, b) => (b.height || 0) - (a.height || 0))[0] || null;
+    // Extract particular formats URLs (360p, 480p, 720p, audio)
+    const formats = info.formats || [];
+    const result = {
+      '360p': null,
+      '480p': null,
+      '720p': null,
+      'audio': null,
     };
 
-    const comb = pick(combined, quality);
+    formats.forEach((fmt) => {
+      if (fmt.height === 360 && !result['360p']) result['360p'] = fmt.url;
+      if (fmt.height === 480 && !result['480p']) result['480p'] = fmt.url;
+      if (fmt.height === 720 && !result['720p']) result['720p'] = fmt.url;
+      if (fmt.acodec !== 'none' && fmt.vcodec === 'none' && !result['audio']) result['audio'] = fmt.url;
+    });
 
-    if (comb)
-      return res.json({ served: comb.height, url: comb.url });
-
-    const v = pick(videoOnly, quality);
-    const a = audioOnly.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))[0];
-
-    if (v && a)
-      return res.json({ video_url: v.url, audio_url: a.url });
-
-    return res.status(404).json({ error: "No format found" });
-
-  } catch (err) {
-    res.status(500).json({ error: String(err) });
+    res.status(200).json({
+      title: info.title,
+      thumbnail: info.thumbnail,
+      video_url: info.webpage_url,
+      formats: result,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 }
