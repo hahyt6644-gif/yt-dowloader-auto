@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 2,
   "builds": [
     {
       "src": "api/download.js",
@@ -9,7 +9,7 @@
   "routes": [
     {
       "src": "/api/download",
-      "dest": "/api/download.js"
+      "dest": "api/download.js"
     }
   ]
 }
