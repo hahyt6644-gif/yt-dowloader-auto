@@ -1,8 +1,15 @@
 {
-  "name": "ytapi-vercel",
+  "name": "youtube-download-api",
   "version": "1.0.0",
-  "type": "module",
+  "description": "YouTube Video Download API using youtube-dl-exec on Vercel",
+  "main": "index.js",
   "dependencies": {
-    "youtubei.js": "^8.0.0"
+    "youtube-dl-exec": "^1.4.0"
+  },
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
