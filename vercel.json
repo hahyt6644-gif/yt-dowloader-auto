@@ -1,7 +1,15 @@
 {
-  "functions": {
-    "api/*.js": {
-      "runtime": "nodejs20.x"
+  "version": 3,
+  "builds": [
+    {
+      "src": "api/download.js",
+      "use": "@vercel/node"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/api/download",
+      "dest": "/api/download.js"
+    }
+  ]
 }
